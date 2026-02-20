@@ -583,7 +583,7 @@ export default function FuturesGame({ onBack }) {
             {/* ─── Header ──────────────────────────────── */}
             <div className="ftg-game-header">
                 <div className="ftg-gh-left">
-                    <button className="ftg-exit-btn" onClick={() => { clearInterval(timerRef.current); setPhase('menu'); setScenario(null); }}>✕</button>
+                    <button className="ftg-exit-btn" onClick={() => { clearInterval(timerRef.current); setPhase('menu'); setScenario(null); }}>✕ Exit to Menu</button>
                     <span className="ftg-gh-title">Futures Curve</span>
                     <span className="ftg-gh-scenario">{scenario.name}</span>
                     <span className={`mode-indicator ${gameMode}`}>

@@ -84,7 +84,7 @@ export default function ScenarioMenu({ onTutorial, onGuide, onTrainer, onCargoGa
                     <div className="daily-challenge-card">
                         <div className="dc-content">
                             <div className="dc-label">DAILY CHALLENGE • {dailyScenario.dateString}</div>
-                            <h2 className="dc-title">Market Volatility Event</h2>
+                            <h2 className="dc-title">{dailyScenario.name}</h2>
                             <div className="dc-meta">
                                 <span>Risk: {dailyScenario.difficulty}</span>
                                 <span>Reward: 1000 XP</span>

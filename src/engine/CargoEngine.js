@@ -214,6 +214,39 @@ export class CargoEngine {
         this.pricingDailyPrices = []; // prices collected during pricing period
         this.phase = 'briefing'; // briefing → constructing → monitoring → settling → review
 
+        // New features: Messages and Deal Sheet
+        this.messages = [];
+        this.riskReportStatus = null; // null | 'caught' | 'false_alarm'
+
+        // Generate the Deal Sheet (10% chance of error)
+        this.dealSheetError = Math.random() < 0.10;
+        const actualVolume = this.cargo.volume;
+
+        // Base deal sheet details
+        this.dealSheet = {
+            id: `TRADE-${Math.floor(Math.random() * 90000) + 10000}`,
+            counterparty: 'Global Energy Trading Ltd',
+            tradeDate: 'Today',
+            grade: this.cargo.grade,
+            volume: actualVolume,
+            pricingTerms: `${this.cargo.pricingDays} days ${this.cargo.pricingType} BL (Dated Brent)`,
+        };
+
+        // If error, perturb either volume or something else noticeable
+        if (this.dealSheetError) {
+            // Error case: volume differs by 10%
+            const errorVolume = actualVolume + (Math.random() > 0.5 ? 100000 : -100000);
+            this.dealSheet.volume = errorVolume;
+        }
+
+        // Add initial message
+        this.messages.push({
+            day: 0,
+            sender: 'Desk Head',
+            text: `Morning. We just booked the ${this.cargo.grade} cargo. Deal sheet ${this.dealSheet.id} is attached. Review the exposure and start hedging.`,
+            isDealSheet: true
+        });
+
         // Roll history
         this.rollHistory = [];
 
@@ -373,10 +406,34 @@ export class CargoEngine {
                 price,
                 month: monthForToday,
             });
+
+            // Generate daily recap message from trader if during pricing
+            this.messages.push({
+                day: this.currentDay,
+                sender: 'Trader',
+                text: `Daily Pricing Recap: Physical priced at $${price.toFixed(2)} for ${monthForToday}.`
+            });
         }
 
         if (this.currentDay > pricingRange.end && this.pricingStarted) {
             this.pricingComplete = true;
+        }
+
+        // Generate occasional random market chatter
+        if (this.currentDay > 0 && Math.random() < 0.1 && !this.pricingStarted) {
+            const chatter = [
+                "Market feels heavy today, bids are pulling back.",
+                "Seeing strong buying interest in the front month.",
+                "Just heard a rumor about reduced OPEC output, might see a bump.",
+                "Quiet session today, vols are collapsing.",
+                "Spreads are getting blown out, careful if you need to roll soon."
+            ];
+            const msg = chatter[Math.floor(Math.random() * chatter.length)];
+            this.messages.push({
+                day: this.currentDay,
+                sender: 'Trader',
+                text: msg
+            });
         }
 
         return dayEvents;
@@ -408,6 +465,29 @@ export class CargoEngine {
                 pos.close(this.curve.getPrice(pos.month));
             }
         });
+    }
+
+    /**
+     * Report an error to risk management based on the deal sheet
+     */
+    reportToRisk() {
+        if (this.riskReportStatus) return; // already reported
+
+        if (this.dealSheetError) {
+            this.riskReportStatus = 'caught';
+            this.messages.push({
+                day: this.currentDay,
+                sender: 'Risk Dept',
+                text: `Good catch on ${this.dealSheet.id}! The entered volume did not match the cargo docket. We've amended the trade. Bonus XP awarded.`
+            });
+        } else {
+            this.riskReportStatus = 'false_alarm';
+            this.messages.push({
+                day: this.currentDay,
+                sender: 'Risk Dept',
+                text: `We reviewed ${this.dealSheet.id} and found no discrepancies. Try to be more careful before escalating to Risk.`
+            });
+        }
     }
 
     /**
@@ -535,6 +615,10 @@ export class CargoEngine {
             firedEvents: this.firedEvents,
             rollHistory: this.rollHistory,
             phase: this.phase,
+            dealSheet: this.dealSheet,
+            dealSheetError: this.dealSheetError,
+            riskReportStatus: this.riskReportStatus,
+            messages: this.messages,
         };
     }
 }

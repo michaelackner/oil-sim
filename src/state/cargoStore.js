@@ -78,6 +78,22 @@ const useCargoStore = create((set, get) => ({
         });
     },
 
+    /** Place an additional hedge during the monitoring phase based on daily messages */
+    placeHedgeDuringMonitoring: (month, lots, direction) => {
+        const { engine } = get();
+        if (!engine) return;
+        engine.placeHedge(month, direction * lots);
+        set({ engineState: engine.getState() });
+    },
+
+    /** Report the current deal sheet to risk management */
+    reportToRisk: () => {
+        const { engine } = get();
+        if (!engine) return;
+        engine.reportToRisk();
+        set({ engineState: engine.getState() });
+    },
+
     /** Advance one day during monitoring */
     advanceDay: () => {
         const { engine, phase } = get();

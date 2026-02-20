@@ -74,6 +74,8 @@ export default function CargoHedgeGame({ onBack }) {
     const executeRoll = useCargoStore(s => s.executeRoll);
     const skipRoll = useCargoStore(s => s.skipRoll);
     const returnToMenu = useCargoStore(s => s.returnToMenu);
+    const placeHedgeDuringMonitoring = useCargoStore(s => s.placeHedgeDuringMonitoring);
+    const reportToRisk = useCargoStore(s => s.reportToRisk);
     const [showTutorial, setShowTutorial] = useState(false);
 
     // ─── TUTORIAL ────────────────────────────────────────────
@@ -432,6 +434,9 @@ export default function CargoHedgeGame({ onBack }) {
             onAdvanceDays={advanceDays}
             onRoll={executeRoll}
             onSkipRoll={skipRoll}
+            onPlaceHedge={placeHedgeDuringMonitoring}
+            onReportRisk={reportToRisk}
+            onExit={returnToMenu}
         />;
     }
 
@@ -453,8 +458,11 @@ export default function CargoHedgeGame({ onBack }) {
 
 // ─── MONITORING PHASE COMPONENT ─────────────────────────────────
 
-function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, onAdvanceDays, onRoll, onSkipRoll }) {
+function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, onAdvanceDays, onRoll, onSkipRoll, onPlaceHedge, onReportRisk, onExit }) {
     const [autoRunning, setAutoRunning] = useState(false);
+    const [activeTab, setActiveTab] = useState('exposure'); // 'exposure' | 'messages' | 'control'
+    const [hedgeLots, setHedgeLots] = useState('');
+    const [hedgeMonth, setHedgeMonth] = useState('');
     const autoRef = useRef(null);
 
     // Auto-advance
@@ -477,6 +485,13 @@ function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, on
     const progress = (engineState.currentDay / engineState.totalDays) * 100;
     const pRange = c.pricingRange;
     const monthSplit = engineState.pricingMonthSplit;
+    const isShort = scenario.hedgePosition === 'short';
+
+    // Physical exposure calc
+    const physicalExposureLots = (isShort ? -1 : 1) * c.requiredLots;
+    // Paper exposure calc
+    const paperExposureLots = engineState.openHedges.reduce((sum, h) => sum + h.lots, 0);
+    const netExposure = physicalExposureLots + paperExposureLots;
 
     // For the roll panel — determine what roll is needed
     let rollSuggestion = null;
@@ -528,6 +543,7 @@ function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, on
 
             <div className="chg-monitor">
                 <div className="chg-monitor-header">
+                    <button className="ftg-exit-btn" onClick={onExit} style={{ marginRight: '16px' }}>✕ Exit</button>
                     <span className="chg-mon-day">Day {engineState.currentDay} / {engineState.totalDays}</span>
                     <span className="chg-mon-scenario">{scenario.name}</span>
                     <div className="chg-mon-controls">
@@ -578,52 +594,130 @@ function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, on
                         </div>
                     </div>
 
-                    {/* Right: Cargo + Hedge Status */}
-                    <div className="chg-monitor-panel">
-                        <div className="chg-panel-title">Cargo & Hedge Status</div>
-                        <div className="chg-status-rows">
-                            <div className="chg-status-row">
-                                <span className="chg-sr-label">BL Date</span>
-                                <span className={`chg-sr-value ${c.blShifted ? 'shifted' : ''}`}>
-                                    Day {c.blDay}
-                                    {c.blShifted && <span className="chg-shifted-badge">shifted from {c.originalBlDay}</span>}
-                                </span>
-                            </div>
-                            <div className="chg-status-row">
-                                <span className="chg-sr-label">Pricing Window</span>
-                                <span className="chg-sr-value">Day {pRange.start} – {pRange.end}</span>
-                            </div>
-                            <div className="chg-status-row">
-                                <span className="chg-sr-label">Pricing Months</span>
-                                <span className="chg-sr-value">
-                                    {Object.entries(monthSplit).map(([m, d]) => `${m}: ${d}d`).join(' | ')}
-                                </span>
-                            </div>
-                            <div className="chg-status-row separator" />
-                            {engineState.openHedges.map((h, i) => (
-                                <div key={i} className="chg-status-row hedge-row">
-                                    <span className="chg-sr-label">Hedge #{i + 1}</span>
-                                    <span className="chg-sr-value">
-                                        {h.lots < 0 ? 'SHORT' : 'LONG'} {Math.abs(h.lots)} lots {h.month} @ ${h.entryPrice.toFixed(2)}
-                                        <span className={`chg-pnl ${h.unrealizedPnl >= 0 ? 'positive' : 'negative'}`}>
-                                            {h.unrealizedPnl >= 0 ? '+' : ''}{h.unrealizedPnl.toLocaleString()}
+                    {/* Right: Tabbed Interface */}
+                    <div className="chg-monitor-panel chg-tabs-panel">
+                        <div className="chg-tabs-header">
+                            <button className={`chg-tab-btn ${activeTab === 'exposure' ? 'active' : ''}`} onClick={() => setActiveTab('exposure')}>Exposure</button>
+                            <button className={`chg-tab-btn ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>
+                                Messages {engineState.messages?.length > 0 && <span className="chg-msg-badge">{engineState.messages.length}</span>}
+                            </button>
+                            <button className={`chg-tab-btn ${activeTab === 'control' ? 'active' : ''}`} onClick={() => setActiveTab('control')}>Control Room</button>
+                        </div>
+
+                        <div className="chg-tab-content">
+                            {/* EXPOSURE TAB */}
+                            {activeTab === 'exposure' && (
+                                <div className="chg-exposure-view">
+                                    <div className="chg-net-exposure">
+                                        <span className="chg-ne-label">Net Exposure:</span>
+                                        <span className={`chg-ne-val ${netExposure === 0 ? 'flat' : netExposure > 0 ? 'long' : 'short'}`}>
+                                            {netExposure === 0 ? 'FLAT (Fully Hedged)' : `${Math.abs(netExposure)} Lots ${netExposure > 0 ? 'LONG' : 'SHORT'} (Unhedged Risk)`}
                                         </span>
-                                    </span>
+                                    </div>
+
+                                    <div className="chg-exposure-split">
+                                        {/* Physical Side */}
+                                        <div className="chg-exp-half physical">
+                                            <h4>📦 Physical Exposure</h4>
+                                            <div className="chg-exp-item">
+                                                <strong>Source:</strong> Cargo Docket ({c.grade})<br />
+                                                <strong>Volume:</strong> {c.volume.toLocaleString()} bbls ({c.requiredLots} lots)<br />
+                                                <strong>Position:</strong> <span className={isShort ? 'short-text' : 'long-text'}>{isShort ? 'SHORT' : 'LONG'}</span><br />
+                                                <strong>Effect:</strong> {isShort ? `-${c.requiredLots} lots` : `+${c.requiredLots} lots`}
+                                            </div>
+                                            <div className="chg-exp-item">
+                                                <strong>BL:</strong> Day {c.blDay} {c.blShifted && <span className="chg-shifted-badge">shifted</span>}<br />
+                                                <strong>Pricing Window:</strong> Day {pRange.start} – {pRange.end}
+                                            </div>
+                                        </div>
+
+                                        {/* Paper Side */}
+                                        <div className="chg-exp-half paper">
+                                            <h4>📄 Paper Exposure</h4>
+                                            {engineState.openHedges.length === 0 ? (
+                                                <div className="chg-exp-item empty">No hedges placed.</div>
+                                            ) : (
+                                                engineState.openHedges.map((h, i) => (
+                                                    <div key={i} className="chg-exp-item hedge-row">
+                                                        <strong>Source:</strong> Hedge Executed<br />
+                                                        <strong>Details:</strong> {Math.abs(h.lots)} lots {h.month} @ ${h.entryPrice.toFixed(2)}<br />
+                                                        <strong>Effect:</strong> <span className={h.lots > 0 ? 'long-text' : 'short-text'}>{h.lots > 0 ? '+' : ''}{h.lots} lots</span><br />
+                                                        <strong>Mark-to-Market:</strong> <span className={`chg-pnl ${h.unrealizedPnl >= 0 ? 'positive' : 'negative'}`}>
+                                                            {h.unrealizedPnl >= 0 ? '+' : ''}{h.unrealizedPnl.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Mini Trade Widget */}
+                                    <div className="chg-mini-trade">
+                                        <h4>Add Hedge Trade</h4>
+                                        <div className="chg-mt-inputs">
+                                            <input type="number" placeholder="Lots" value={hedgeLots} onChange={e => setHedgeLots(e.target.value)} className="chg-mt-input" />
+                                            <select value={hedgeMonth} onChange={e => setHedgeMonth(e.target.value)} className="chg-mt-select">
+                                                <option value="" disabled>Month</option>
+                                                {engineState.monthLabels.map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                            <button
+                                                className="chg-mt-btn sell"
+                                                disabled={!hedgeLots || !hedgeMonth}
+                                                onClick={() => { onPlaceHedge(hedgeMonth, parseInt(hedgeLots, 10), -1); setHedgeLots(''); }}
+                                            >Sell</button>
+                                            <button
+                                                className="chg-mt-btn buy"
+                                                disabled={!hedgeLots || !hedgeMonth}
+                                                onClick={() => { onPlaceHedge(hedgeMonth, parseInt(hedgeLots, 10), 1); setHedgeLots(''); }}
+                                            >Buy</button>
+                                        </div>
+                                    </div>
                                 </div>
-                            ))}
-                            {engineState.rollHistory.length > 0 && (
-                                <>
-                                    <div className="chg-status-row separator" />
-                                    <div className="chg-sr-label" style={{ padding: '4px 0', fontSize: '11px', color: 'var(--text-muted)' }}>Roll History</div>
-                                    {engineState.rollHistory.map((r, i) => (
-                                        <div key={i} className="chg-status-row roll-row">
-                                            <span className="chg-sr-label">Day {r.day}</span>
-                                            <span className="chg-sr-value">
-                                                {r.lots} lots {r.fromMonth}→{r.toMonth} | Spread: {r.spread > 0 ? '+' : ''}{r.spread.toFixed(2)} | Cost: ${r.rollCost.toLocaleString()}
-                                            </span>
+                            )}
+
+                            {/* MESSAGES TAB */}
+                            {activeTab === 'messages' && (
+                                <div className="chg-messages-view">
+                                    {[...(engineState.messages || [])].reverse().map((msg, i) => (
+                                        <div key={i} className={`chg-msg-bubble ${msg.isDealSheet ? 'dealsheet' : ''} ${msg.sender === 'Risk Dept' ? 'risk' : ''}`}>
+                                            <div className="chg-msg-header">
+                                                <span className="chg-msg-sender">{msg.sender}</span>
+                                                <span className="chg-msg-time">Day {msg.day}</span>
+                                            </div>
+                                            <div className="chg-msg-body">{msg.text}</div>
                                         </div>
                                     ))}
-                                </>
+                                    {(!engineState.messages || engineState.messages.length === 0) && (
+                                        <div className="chg-msg-empty">No messages yet.</div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* CONTROL ROOM TAB */}
+                            {activeTab === 'control' && engineState.dealSheet && (
+                                <div className="chg-control-view">
+                                    <h3>Risk Management Control Room</h3>
+                                    <p className="chg-cr-desc">Verify Deal Sheet details against the physical Cargo Docket. If there are discrepancies, alert Risk Management immediately.</p>
+
+                                    <div className="chg-cr-sheet">
+                                        <div className="chg-cr-sheet-title">DEAL SHEET: <span>{engineState.dealSheet.id}</span></div>
+                                        <div className="chg-cr-sheet-row"><strong>Counterparty:</strong> {engineState.dealSheet.counterparty}</div>
+                                        <div className="chg-cr-sheet-row"><strong>Trade Date:</strong> {engineState.dealSheet.tradeDate}</div>
+                                        <div className="chg-cr-sheet-row"><strong>Grade:</strong> {engineState.dealSheet.grade}</div>
+                                        <div className="chg-cr-sheet-row"><strong>Volume:</strong> {engineState.dealSheet.volume.toLocaleString()} bbls</div>
+                                        <div className="chg-cr-sheet-row"><strong>Pricing Terms:</strong> {engineState.dealSheet.pricingTerms}</div>
+                                    </div>
+
+                                    {!engineState.riskReportStatus ? (
+                                        <button className="snt-btn secondary alert-risk-btn" onClick={onReportRisk}>
+                                            🚨 Alert Risk: Discrepancy Found in Deal Sheet
+                                        </button>
+                                    ) : (
+                                        <div className={`chg-risk-status ${engineState.riskReportStatus}`}>
+                                            Status: {engineState.riskReportStatus === 'caught' ? 'Error Caught & Amended!' : 'False Alarm'}
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
