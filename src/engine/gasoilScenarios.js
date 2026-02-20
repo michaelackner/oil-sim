@@ -15,6 +15,18 @@ export const gasoilScenarios = [
         marketVolatility: 0.004, // Correct volatility scaling
         events: [
             {
+                tick: 20,
+                category: 'Weather',
+                headline: 'False Spring: Sudden Warming Causes Demand Plunge',
+                detail: 'A bizarrely warm week leads to canceled heating oil orders. Storage actually builds momentarily, dumping the prompt futures price and violently flipping the curve into Contango.',
+                impact: { direction: -1, immediatePct: 0.04, driftPct: 0.02, frontWeight: 2.8, backWeight: 0.2, volatilityMultiplier: 1.8, noiseAmplifier: 1.6 },
+                strategy: {
+                    action: 'Buy the Dip / Accumulate Prompt',
+                    reasoning: 'The long-term vortex forecast remains intact. This is a temporary head-fake that affords an immense buying opportunity in the front month.',
+                    principle: 'Short-term weather noise creates mean-reversion opportunities.'
+                }
+            },
+            {
                 tick: 35,
                 category: 'Weather',
                 headline: 'Meteorologists Warn of "Polar Vortex" Splitting',
@@ -129,6 +141,30 @@ export const gasoilScenarios = [
         marketVolatility: 0.003,
         events: [
             {
+                tick: 40,
+                category: 'Refining',
+                headline: 'Unplanned Outage at Normandy Refinery',
+                detail: 'Before the strike even begins, a critical hydrocracker unit catches fire. Product output drops immediately, violently flipping the Contango into Backwardation.',
+                impact: { direction: 1, immediatePct: 0.035, driftPct: 0.02, frontWeight: 3.0, backWeight: 0.4, volatilityMultiplier: 1.7, noiseAmplifier: 1.5 },
+                strategy: {
+                    action: 'Sell the Spike / Short Prompt',
+                    reasoning: 'Unplanned outages often rip the prompt curve up violently, but if damage is minimal, the curve will snap back into Contango just as quickly.',
+                    principle: 'Spikes from single-unit outages often retrace quickly.'
+                }
+            },
+            {
+                tick: 60,
+                category: 'Refining',
+                headline: 'Normandy Refinery Restarts Safely',
+                detail: 'The fire damage was superficial. Operations resume, crashing the front month structure right back into Contango just prior to union talks.',
+                impact: { direction: -1, immediatePct: 0.035, driftPct: 0.02, frontWeight: 3.0, backWeight: 0.3, volatilityMultiplier: 1.5, noiseAmplifier: 1.2 },
+                strategy: {
+                    action: 'Square Up and Wait',
+                    reasoning: 'The mini-squeeze is over. Wait to see if actual strikes materialize.',
+                    principle: 'Return of supply destroys prompt premiums.'
+                }
+            },
+            {
                 tick: 75,
                 category: 'Geopolitics',
                 headline: 'CGT Union Calls for Walkouts at TotalEnergies',
@@ -231,6 +267,30 @@ export const gasoilScenarios = [
         monthlySpread: -5.00,
         marketVolatility: 0.0035,
         events: [
+            {
+                tick: 35,
+                category: 'Logistics',
+                headline: 'Dredging Collapse: Barges Run Aground early',
+                detail: 'Months before the major squeeze, a large barge blocks a narrow pass on the Rhine. Barrels backstop into coastal storage immediately, violently flipping the curve into Contango.',
+                impact: { direction: -1, immediatePct: 0.045, driftPct: 0.02, frontWeight: 2.8, backWeight: 0.5, volatilityMultiplier: 1.8, noiseAmplifier: 1.5 },
+                strategy: {
+                    action: 'Buy Prompt Futures',
+                    reasoning: 'The blockage will be cleared soon in the short-term. Once cleared, the backed-up oil flows again, restoring the inherent backwardation.',
+                    principle: 'Temporary logistical blockages strand supply temporarily.'
+                }
+            },
+            {
+                tick: 55,
+                category: 'Logistics',
+                headline: 'Barge Refloated, Traffic Resumes',
+                detail: 'Authorities clear the channel. ARA coastal tanks begin discharging barges inland again, rapidly snapping the curve back into Backwardation.',
+                impact: { direction: 1, immediatePct: 0.045, driftPct: 0.02, frontWeight: 2.8, backWeight: 0.5, volatilityMultiplier: 1.5, noiseAmplifier: 1.2 },
+                strategy: {
+                    action: 'Take Profits',
+                    reasoning: 'The structural play is over for now, the normal dry-summer backwardation is restored.',
+                    principle: 'Logistics repairs eliminate stranded contango anomalies.'
+                }
+            },
             {
                 tick: 75,
                 category: 'Logistics',
