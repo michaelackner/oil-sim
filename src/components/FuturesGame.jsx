@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FuturesCurveEngine } from '../engine/FuturesCurveEngine.js';
 import { futuresScenarios } from '../engine/futuresScenarios.js';
+import { gasoilScenarios } from '../engine/gasoilScenarios.js';
 import useCareerStore from '../state/careerStore.js';
-
-const LOT_SIZE = 1000; // barrels per lot
 
 // ─── Forward Curve SVG Chart ──────────────────────────
 function CurveChart({ prices, startPrices, months, selectedMonth, onSelectMonth }) {
@@ -144,8 +143,9 @@ function FuturesEventPopup({ event, onDismiss, gameMode, prices, months }) {
 }
 
 // ─── Score Card ───────────────────────────────────────
-function FuturesScoreCard({ trades, positions, prices, avgEntries, realisedPnL, startPrices, months, onBack }) {
+function FuturesScoreCard({ trades, positions, prices, avgEntries, realisedPnL, startPrices, months, contractSize, assetType, onBack }) {
     // Unrealised P&L per month
+    const LOT_SIZE = contractSize || 1000;
     let totalUnrealised = 0;
     const monthPnL = positions.map((pos, i) => {
         if (pos === 0) return 0;
@@ -191,7 +191,7 @@ function FuturesScoreCard({ trades, positions, prices, avgEntries, realisedPnL, 
                     </div>
                     <div className="ftg-score-section">
                         <h4>Spread Change</h4>
-                        <span className={spreadChange >= 0 ? 'pos' : 'neg'}>{spreadChange >= 0 ? '+' : ''}{spreadChange.toFixed(2)}/bbl</span>
+                        <span className={spreadChange >= 0 ? 'pos' : 'neg'}>{spreadChange >= 0 ? '+' : ''}{spreadChange.toFixed(2)}/{assetType === 'gasoil' ? 'MT' : 'bbl'}</span>
                     </div>
                 </div>
 
@@ -249,6 +249,7 @@ function FuturesScoreCard({ trades, positions, prices, avgEntries, realisedPnL, 
 export default function FuturesGame({ onBack }) {
     // ─── Phase state ──────────────────────────────────
     const [phase, setPhase] = useState('menu');
+    const [assetFilter, setAssetFilter] = useState('crude');
     const [scenario, setScenario] = useState(null);
     const [gameMode, setGameMode] = useState('learning');
 
@@ -351,8 +352,10 @@ export default function FuturesGame({ onBack }) {
                     }, ...items].slice(0, 50));
 
                     // Show popup
-                    setPendingEvent(ev);
-                    clearInterval(timerRef.current);
+                    if (!scenario.disablePopups) {
+                        setPendingEvent(ev);
+                        clearInterval(timerRef.current);
+                    }
                 }
 
                 // Noise events
@@ -375,7 +378,7 @@ export default function FuturesGame({ onBack }) {
                 setPositions(pos => {
                     let unr = 0;
                     pos.forEach((p, i) => {
-                        if (p !== 0) unr += (newPrices[i] - avgEntries[i]) * p * LOT_SIZE;
+                        if (p !== 0) unr += (newPrices[i] - avgEntries[i]) * p * (scenario?.contractSize || 1000);
                     });
                     const totalPnL = realisedPnL + unr;
                     if (totalPnL > peakPnL) setPeakPnL(totalPnL);
@@ -401,7 +404,7 @@ export default function FuturesGame({ onBack }) {
             const currentValuations = positions.reduce((acc, pos, i) => {
                 if (pos === 0) return acc;
                 const currentPrice = prices[i];
-                return acc + (pos * LOT_SIZE * (currentPrice - avgEntries[i]));
+                return acc + (pos * (scenario?.contractSize || 1000) * (currentPrice - avgEntries[i]));
             }, 0);
             const totalPnL = realisedPnL + currentValuations;
 
@@ -433,7 +436,7 @@ export default function FuturesGame({ onBack }) {
             // Calculate realised P&L if reducing/flipping
             if (prevPos !== 0 && Math.sign(prevPos) !== Math.sign(newPos) || (prevPos !== 0 && Math.sign(lots) !== Math.sign(prevPos))) {
                 const closedLots = Math.min(Math.abs(prevPos), Math.abs(lots));
-                const pnl = (price - avgEntries[month]) * (prevPos > 0 ? 1 : -1) * closedLots * LOT_SIZE;
+                const pnl = (price - avgEntries[month]) * (prevPos > 0 ? 1 : -1) * closedLots * (scenario?.contractSize || 1000);
                 setRealisedPnL(r => r + pnl);
             }
 
@@ -480,7 +483,7 @@ export default function FuturesGame({ onBack }) {
     let totalUnrealised = 0;
     const monthUnrealised = positions.map((pos, i) => {
         if (pos === 0) return 0;
-        const unr = (prices[i] - avgEntries[i]) * pos * LOT_SIZE;
+        const unr = (prices[i] - avgEntries[i]) * pos * (scenario?.contractSize || 1000);
         totalUnrealised += unr;
         return unr;
     });
@@ -497,18 +500,26 @@ export default function FuturesGame({ onBack }) {
 
     // ─── Scenario Menu ────────────────────────────────
     if (phase === 'menu') {
+        const activeScenarios = assetFilter === 'crude' ? futuresScenarios : gasoilScenarios;
         return (
             <div className="ftg-container">
                 <button className="ftg-back-btn" onClick={onBack}>← Back to Main Menu</button>
                 <h1 className="ftg-title">📊 Futures Curve Trading</h1>
+
+                <div className="ftg-asset-toggle">
+                    <button className={assetFilter === 'crude' ? 'active' : ''} onClick={() => setAssetFilter('crude')}>🛢️ Crude Oil</button>
+                    <button className={assetFilter === 'gasoil' ? 'active' : ''} onClick={() => setAssetFilter('gasoil')}>🚚 ICE Gasoil</button>
+                </div>
+
                 <p className="ftg-subtitle">
-                    Trade the forward curve — 6 contract months with different dynamics.<br />
-                    Supply shocks hit the front. Demand changes move the back.<br />
-                    <em>Master the curve, master oil trading.</em>
+                    {assetFilter === 'crude'
+                        ? 'Trade the 6-month Brent/WTI forward curve. Balance supply shocks and demand sentiment.'
+                        : 'Trade the 3-month ICE Gasoil curve. Navigate winter heating demand and refinery outages.'
+                    }
                 </p>
 
                 <div className="ftg-scenario-grid">
-                    {futuresScenarios.map(sc => (
+                    {activeScenarios.map(sc => (
                         <div key={sc.id} className="ftg-scenario-card" onClick={() => { setScenario(sc); setPhase('modeSelect'); }}>
                             <div className="ftg-sc-header">
                                 <span className="ftg-sc-name">{sc.name}</span>
@@ -570,6 +581,8 @@ export default function FuturesGame({ onBack }) {
                 realisedPnL={realisedPnL}
                 startPrices={startPrices}
                 months={scenario.months}
+                contractSize={scenario.contractSize}
+                assetType={scenario.assetType}
                 onBack={() => { setPhase('menu'); setScenario(null); }}
             />
         );

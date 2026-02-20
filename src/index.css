@@ -151,6 +151,19 @@ body {
   flex-shrink: 0;
 }
 
+/* ===================== SIGNATURE ===================== */
+.author-signature {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 1000;
+  letter-spacing: 0.5px;
+}
+
 /* ===================== PANELS ===================== */
 
 .panel {
@@ -8685,4 +8698,38 @@ body.theme-bloomberg .terminal-container {
   border-color: rgba(245, 158, 11, 0.4);
   color: var(--amber);
   box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+}
+
+/* Futures Asset Toggle */
+.ftg-asset-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0 24px 0;
+}
+
+.ftg-asset-toggle button {
+  padding: 12px 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 160px;
+}
+
+.ftg-asset-toggle button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.ftg-asset-toggle button.active {
+  background: rgba(0, 243, 255, 0.1);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 4px 12px rgba(0, 243, 255, 0.15);
 }

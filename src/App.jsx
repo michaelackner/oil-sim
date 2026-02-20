@@ -160,6 +160,11 @@ function App() {
       {showStrategyReview && (
         <StrategyReview onClose={() => setShowStrategyReview(false)} />
       )}
+
+      {/* Signature */}
+      <div className="author-signature">
+        Built by Michael L
+      </div>
     </div>
   );
 }
