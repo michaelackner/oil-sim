@@ -503,8 +503,11 @@ export default function FuturesGame({ onBack }) {
         const activeScenarios = assetFilter === 'crude' ? futuresScenarios : gasoilScenarios;
         return (
             <div className="ftg-container">
-                <button className="ftg-back-btn" onClick={onBack}>← Back to Main Menu</button>
-                <h1 className="ftg-title">📊 Futures Curve Trading</h1>
+                <div className="ftg-menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <button className="ftg-exit-btn" onClick={onBack}>← Back to Main Menu</button>
+                    <h1 className="ftg-title" style={{ margin: 0 }}>📊 Futures Curve Trading</h1>
+                    <div style={{ width: '130px' }}></div> {/* Spacer to center the title */}
+                </div>
 
                 <div className="ftg-asset-toggle">
                     <button className={assetFilter === 'crude' ? 'active' : ''} onClick={() => setAssetFilter('crude')}>🛢️ Crude Oil</button>

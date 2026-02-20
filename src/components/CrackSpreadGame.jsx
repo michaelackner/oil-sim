@@ -430,8 +430,11 @@ export default function CrackSpreadGame({ onBack }) {
     if (phase === 'menu') {
         return (
             <div className="ftg-container">
-                <button className="ftg-back-btn" onClick={onBack}>← Back to Main Menu</button>
-                <h1 className="ftg-title" style={{ color: '#ff8a65' }}>🔥 Crack Spread Trading</h1>
+                <div className="ftg-menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <button className="ftg-exit-btn" onClick={onBack}>← Back to Main Menu</button>
+                    <h1 className="ftg-title" style={{ color: '#ff8a65', margin: 0 }}>🔥 Crack Spread Trading</h1>
+                    <div style={{ width: '130px' }}></div>
+                </div>
                 <p className="ftg-subtitle">
                     Trade the refining margin — the spread between crude and products.<br />
                     BUY crack = profit when products rise vs crude (margins widen).<br />
