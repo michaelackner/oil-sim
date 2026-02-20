@@ -503,10 +503,9 @@ export default function FuturesGame({ onBack }) {
         const activeScenarios = assetFilter === 'crude' ? futuresScenarios : gasoilScenarios;
         return (
             <div className="ftg-container">
-                <div className="ftg-menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <button className="ftg-exit-btn" onClick={onBack}>← Back to Main Menu</button>
+                <div className="ftg-menu-header" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: '24px' }}>
+                    <button className="ftg-exit-btn" onClick={onBack} style={{ position: 'absolute', left: 0 }} title="Back to Main Menu">✕</button>
                     <h1 className="ftg-title" style={{ margin: 0 }}>📊 Futures Curve Trading</h1>
-                    <div style={{ width: '130px' }}></div> {/* Spacer to center the title */}
                 </div>
 
                 <div className="ftg-asset-toggle">
@@ -599,7 +598,7 @@ export default function FuturesGame({ onBack }) {
             {/* ─── Header ──────────────────────────────── */}
             <div className="ftg-game-header">
                 <div className="ftg-gh-left">
-                    <button className="ftg-exit-btn" onClick={() => { clearInterval(timerRef.current); setPhase('menu'); setScenario(null); }}>✕ Exit to Menu</button>
+                    <button className="ftg-exit-btn" onClick={() => { clearInterval(timerRef.current); setPhase('menu'); setScenario(null); }} title="Exit to Menu">✕</button>
                     <span className="ftg-gh-title">Futures Curve</span>
                     <span className="ftg-gh-scenario">{scenario.name}</span>
                     <span className={`mode-indicator ${gameMode}`}>

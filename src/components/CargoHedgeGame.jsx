@@ -543,7 +543,7 @@ function MonitoringPhase({ engineState, scenario, pendingEvent, onAdvanceDay, on
 
             <div className="chg-monitor">
                 <div className="chg-monitor-header">
-                    <button className="ftg-exit-btn" onClick={onExit} style={{ marginRight: '16px' }}>✕ Exit</button>
+                    <button className="ftg-exit-btn" onClick={onExit} style={{ marginRight: '16px' }} title="Exit">✕</button>
                     <span className="chg-mon-day">Day {engineState.currentDay} / {engineState.totalDays}</span>
                     <span className="chg-mon-scenario">{scenario.name}</span>
                     <div className="chg-mon-controls">
